@@ -107,26 +107,10 @@ export const uploadImage = multer({
 });
 
 // Helper function to get file URL
-// Returns relative URL by default (works in all environments)
-// Can optionally generate absolute URL if BASE_URL is set
-export function getFileUrl(filename: string, type: "document" | "image", req?: Request): string {
+export function getFileUrl(filename: string, type: "document" | "image"): string {
+  const baseUrl = process.env.BASE_URL || "http://localhost:7001";
   const folder = type === "document" ? "documents" : "images";
-  const relativePath = `/uploads/${folder}/${filename}`;
-  
-  // If BASE_URL is explicitly set, use absolute URL
-  if (process.env.BASE_URL) {
-    return `${process.env.BASE_URL}${relativePath}`;
-  }
-  
-  // If Request object is provided, build URL from request
-  if (req) {
-    const protocol = req.protocol || 'http';
-    const host = req.get('host') || 'localhost:7001';
-    return `${protocol}://${host}${relativePath}`;
-  }
-  
-  // Default to relative URL (works in all environments)
-  return relativePath;
+  return `${baseUrl}/uploads/${folder}/${filename}`;
 }
 
 // Helper function to get file path

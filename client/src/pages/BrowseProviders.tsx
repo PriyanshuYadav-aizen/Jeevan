@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import WorkerCard from "../components/WorkerCard";
 import BookingForm from "../components/BookingForm";
 import { API_URLS } from "../utils/api";
+import FindWithAI from "../components/FindWithAI";
+import StarRating from "../components/StarRating";
 
 type Worker = {
   _id: string;
@@ -15,6 +17,18 @@ type Worker = {
   dailyRate?: number;
   weeklyRate?: number;
   isAvailable?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
+};
+
+type Review = {
+  _id: string;
+  rating: number;
+  comment?: string;
+  patientId: {
+    username: string;
+  };
+  createdAt: string;
 };
 
 type RoleFilter = "all" | "Nurse" | "Caretaker" | "Compounder";
@@ -29,6 +43,12 @@ export default function BrowseProviders() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [workerToBook, setWorkerToBook] = useState<Worker | null>(null);
+  const [workerReviews, setWorkerReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [aiRecommendedWorkers, setAIRecommendedWorkers] = useState<Worker[]>([]);
+  const [isAIMode, setIsAIMode] = useState(false);
+  const [aiReasoning, setAIReasoning] = useState<string>("");
 
   const fetchWorkers = useCallback(async () => {
     setLoading(true);
@@ -61,9 +81,24 @@ export default function BrowseProviders() {
     }
   }, [selectedRole, workers]);
 
-  function handleWorkerClick(worker: Worker) {
+  async function handleWorkerClick(worker: Worker) {
     setSelectedWorker(worker);
     setShowDetailsModal(true);
+    
+    // Fetch reviews for this worker
+    setLoadingReviews(true);
+    try {
+      const response = await fetch(API_URLS.reviews.getWorkerReviews(worker._id));
+      const data = await response.json();
+      if (data.success) {
+        setWorkerReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+      setWorkerReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
   }
 
   function handleBookNow(worker: Worker) {
@@ -82,6 +117,23 @@ export default function BrowseProviders() {
     setWorkerToBook(null);
     alert("Booking created successfully! Check your bookings from the navbar.");
     // Optionally navigate to bookings page
+  }
+
+  function handleAIRecommend(recommendedWorkers: Worker[], reasoning: string) {
+    setAIRecommendedWorkers(recommendedWorkers);
+    setAIReasoning(reasoning);
+    setIsAIMode(true);
+    setFilteredWorkers(recommendedWorkers);
+    setShowAIAssistant(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleResetFilters() {
+    setIsAIMode(false);
+    setAIRecommendedWorkers([]);
+    setAIReasoning("");
+    setSelectedRole("all");
+    setFilteredWorkers(workers);
   }
 
   function getRoleCount(role: RoleFilter): number {
@@ -133,8 +185,42 @@ export default function BrowseProviders() {
 
   return (
     <>
-      <section className="w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6">
+      <section className={`w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6 relative ${showAIAssistant ? "md:mr-96" : ""} transition-all duration-300`}>
+        {/* AI Assistant Button - Fixed on Right Side */}
+        {!showAIAssistant && (
+          <button
+            onClick={() => setShowAIAssistant(true)}
+            className="fixed right-6 top-1/2 transform -translate-y-1/2 z-40 bg-gradient-to-r from-teal-600 to-blue-600 text-white px-6 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 font-semibold animate-pulse hover:animate-none"
+          >
+            <span className="text-2xl">🤖</span>
+            <span>Find with AI</span>
+          </button>
+        )}
+
         <div className="mx-auto max-w-7xl">
+          {/* AI Mode Banner */}
+          {isAIMode && (
+            <div className="mb-6 bg-gradient-to-r from-teal-50 to-blue-50 border-l-4 border-teal-600 rounded-lg p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1">
+                  <span className="text-2xl">✨</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">
+                      AI Recommendations ({aiRecommendedWorkers.length} providers found)
+                    </p>
+                    <p className="text-sm text-gray-600">{aiReasoning}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
@@ -280,9 +366,23 @@ export default function BrowseProviders() {
                 )}
 
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {selectedWorker.username}
-                  </h3>
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {selectedWorker.username}
+                    </h3>
+                    {(selectedWorker.averageRating || 0) > 0 && (
+                      <div className="flex flex-col items-end">
+                        <StarRating
+                          rating={selectedWorker.averageRating || 0}
+                          size="md"
+                          showNumber
+                        />
+                        <span className="text-sm text-gray-500 mt-1">
+                          {selectedWorker.reviewCount || 0} {selectedWorker.reviewCount === 1 ? "review" : "reviews"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-teal-100 text-teal-700 mb-4">
                     {selectedWorker.role === "Nurse"
                       ? "Registered Nurse"
@@ -383,6 +483,47 @@ export default function BrowseProviders() {
                 </div>
               )}
 
+              {/* Reviews Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Reviews ({selectedWorker.reviewCount || 0})
+                </h3>
+                {loadingReviews ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                    <p className="text-gray-600 mt-2">Loading reviews...</p>
+                  </div>
+                ) : workerReviews.length > 0 ? (
+                  <div className="space-y-4 max-h-64 overflow-y-auto">
+                    {workerReviews.map((review) => (
+                      <div
+                        key={review._id}
+                        className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {review.patientId?.username || "Anonymous"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <StarRating rating={review.rating} size="sm" />
+                        </div>
+                        {review.comment && (
+                          <p className="text-sm text-gray-700 mt-2">{review.comment}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-500">No reviews yet. Be the first to review!</p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
@@ -468,6 +609,15 @@ export default function BrowseProviders() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Assistant Panel */}
+      {showAIAssistant && (
+        <FindWithAI
+          workers={workers}
+          onRecommend={handleAIRecommend}
+          onClose={() => setShowAIAssistant(false)}
+        />
       )}
     </>
   );

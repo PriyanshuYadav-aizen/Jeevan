@@ -69,7 +69,7 @@ export async function register(req: Request, res: Response) {
         // It's a base64 string, save it to disk
         try {
           const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image", req);
+          processedProfilePicture = getFileUrl(filename, "image");
         } catch (picError) {
           console.error("Error saving profile picture:", picError);
           // Don't fail the entire registration if profile picture fails
@@ -219,7 +219,7 @@ export async function updateMyProfile(req: Request, res: Response) {
           }
           
           const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image", req);
+          processedProfilePicture = getFileUrl(filename, "image");
         } catch (picError) {
           console.error("Error saving profile picture:", picError);
           // Don't fail the entire update if profile picture fails
