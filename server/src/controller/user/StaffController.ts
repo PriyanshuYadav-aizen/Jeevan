@@ -25,7 +25,7 @@ export async function createStaff(req: Request, res: Response) {
         // It's a base64 string, save it to disk
         try {
           const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image");
+          processedProfilePicture = getFileUrl(filename, "image", req);
         } catch (picError) {
           console.error("Error saving profile picture:", picError);
           // Don't fail the entire creation if profile picture fails
@@ -111,7 +111,7 @@ export async function updateStaff(req: Request, res: Response) {
           }
           
           const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image");
+          processedProfilePicture = getFileUrl(filename, "image", req);
         } catch (picError) {
           console.error("Error saving profile picture:", picError);
           // Don't fail the entire update if profile picture fails

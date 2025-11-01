@@ -50,7 +50,7 @@ export async function submitApplication(req: Request, res: Response) {
         // It's a base64 string, save it to disk
         try {
           const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image");
+          processedProfilePicture = getFileUrl(filename, "image", req);
           console.log("Saved profile picture:", filename);
         } catch (picError) {
           console.error("Error saving profile picture:", picError);
@@ -75,7 +75,7 @@ export async function submitApplication(req: Request, res: Response) {
             "document",
             "governmentId"
           );
-          processedDocuments.governmentId = getFileUrl(filename, "document");
+          processedDocuments.governmentId = getFileUrl(filename, "document", req);
           console.log("Saved governmentId:", filename);
         }
         
@@ -85,7 +85,7 @@ export async function submitApplication(req: Request, res: Response) {
             "document",
             "nursingRegistrationCertificate"
           );
-          processedDocuments.nursingRegistrationCertificate = getFileUrl(filename, "document");
+          processedDocuments.nursingRegistrationCertificate = getFileUrl(filename, "document", req);
           console.log("Saved nursingRegistrationCertificate:", filename);
         }
         
@@ -96,7 +96,7 @@ export async function submitApplication(req: Request, res: Response) {
             "document",
             "trainingCertificate"
           );
-          processedDocuments.trainingCertificate = getFileUrl(filename, "document");
+          processedDocuments.trainingCertificate = getFileUrl(filename, "document", req);
           console.log("Saved trainingCertificate:", filename);
         } else {
           console.log("trainingCertificate not present or empty:", {
@@ -112,7 +112,7 @@ export async function submitApplication(req: Request, res: Response) {
             "document",
             "policeVerificationCertificate"
           );
-          processedDocuments.policeVerificationCertificate = getFileUrl(filename, "document");
+          processedDocuments.policeVerificationCertificate = getFileUrl(filename, "document", req);
           console.log("Saved policeVerificationCertificate:", filename);
         }
         
