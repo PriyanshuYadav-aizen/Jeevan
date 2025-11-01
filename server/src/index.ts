@@ -44,7 +44,13 @@ const __dirname1 = path.resolve();
 app.use(express.static(path.join(__dirname1, "../client/dist")));
 
 // Catch-all route to serve index.html for React Router
-app.get("/*", (_, res) => {
+// Use middleware instead of wildcard route for Express 5 compatibility
+app.use((req, res, next) => {
+  // Skip if it's an API route or static file route
+  if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+    return next();
+  }
+  // Serve index.html for all other routes (React Router)
   res.sendFile(path.join(__dirname1, "../client/dist/index.html"));
 });
 
