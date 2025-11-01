@@ -44,7 +44,7 @@ const __dirname1 = path.resolve();
 app.use(express.static(path.join(__dirname1, "../client/dist")));
 
 // Catch-all route to serve index.html for React Router
-app.get("*", (_, res) => {
+app.get("/*", (_, res) => {
   res.sendFile(path.join(__dirname1, "../client/dist/index.html"));
 });
 
