@@ -10,7 +10,7 @@ import Staff from "../../model/user/staff";
 import Patient from "../../model/user/patient";
 import { uploadToCloudinary, deleteFile } from "../../utils/upload";
 
-type RoleName = "User" | "Nurse" | "Caretaker" | "Compounder" | "Patient";
+type RoleName = "User" | "Admin" | "Staff" | "Nurse" | "Caretaker" | "Compounder" | "Patient";
 
 const roleToModel: Record<string, any> = {
   User,

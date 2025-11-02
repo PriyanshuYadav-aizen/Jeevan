@@ -142,7 +142,20 @@ export default function AdminLogin() {
         </button>
 
         <div className="mt-4 text-center text-sm text-slate-600">
-          Don't have an account?{" "}
+          Don't have an admin account?{" "}
+          <a
+            href="/admin/signup"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/admin/signup");
+            }}
+            className="text-teal-600 hover:text-teal-700 font-semibold"
+          >
+            Create Admin Account
+          </a>
+        </div>
+        <div className="mt-2 text-center text-xs text-slate-500">
+          Not an admin?{" "}
           <a
             href="/signup"
             onClick={(e) => {

@@ -1,5 +1,6 @@
 import { Routes, Route} from "react-router-dom";
 import AdminLogin from "./pages/AdminLogin";
+import AdminSignUp from "./pages/AdminSignUp";
 import AdminDashboard from "./pages/AdminDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import BrowseProviders from "./pages/BrowseProviders";
@@ -13,6 +14,7 @@ function App() {
     <>
       <Routes>
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/signup" element={<AdminSignUp />} />
         <Route path="/signup" element={<PatientSignUp />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/staff/create" element={<AdminDashboard />} />

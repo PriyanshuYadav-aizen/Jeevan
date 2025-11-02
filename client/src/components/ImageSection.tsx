@@ -54,11 +54,15 @@ export default function ImageSection() {
             >
               {/* Icon */}
               <div className="flex justify-center mb-3 sm:mb-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-visible p-2">
                   <img 
                     src={service.icon} 
                     alt={service.title}
-                    className="w-full h-full object-contain p-2"
+                    className="w-full h-full object-contain max-w-full max-h-full"
+                    style={{
+                      objectFit: 'contain',
+                      objectPosition: 'center',
+                    }}
                   />
                 </div>
               </div>

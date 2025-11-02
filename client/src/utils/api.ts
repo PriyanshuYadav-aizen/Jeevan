@@ -5,7 +5,7 @@ export const development = "http://localhost:7001" as const;
 export const deployment = "https://jeevan-dphd.onrender.com";
 
 // Simple environment switch: set to "deployment" to use deployment base URL
-export const ENVIRONMENT = "deployment" as string; // or "deployment"
+export const ENVIRONMENT = "development" as string; // or "deployment"
 export const API_BASE = ENVIRONMENT === "deployment" ? deployment : development;
 
 export const API_PATHS = {
