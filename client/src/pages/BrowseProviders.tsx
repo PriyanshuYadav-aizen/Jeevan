@@ -54,6 +54,9 @@ export default function BrowseProviders() {
     setLoading(true);
     setError(null);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const res = await fetch(API_URLS.publicWorkers.listAll(), {
         method: "GET",
         headers: {
@@ -61,8 +64,12 @@ export default function BrowseProviders() {
           "Accept": "application/json",
         },
         mode: "cors",
-        credentials: "omit", // Don't send cookies to avoid CORS issues
+        credentials: "omit",
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
+      
       if (!res.ok) {
         throw new Error(`Failed to fetch workers: ${res.status} ${res.statusText}`);
       }
@@ -71,15 +78,33 @@ export default function BrowseProviders() {
       setFilteredWorkers(data);
     } catch (err) {
       console.error("Error fetching workers:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to load providers";
-      // Check if it's a blocked request (common in Brave browser)
-      if (errorMessage.includes("Failed to fetch") || errorMessage.includes("network")) {
-        setError(
-          "Failed to connect to server. If you're using Brave browser, please disable Brave Shields for this site or allow requests to localhost."
-        );
-      } else {
-        setError(errorMessage);
+      let errorMessage = "Failed to load providers";
+      
+      if (err instanceof Error) {
+        if (err.name === "AbortError") {
+          errorMessage = "Request timed out. Please check if the server is running and try again.";
+        } else if (err.message.includes("Failed to fetch") || err.message.includes("network") || err.message.includes("ERR_")) {
+          const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+          if (isLocalhost) {
+            errorMessage = `Unable to connect to server at ${API_URLS.base || "http://localhost:5000"}. Please ensure:
+            
+1. The server is running on port 5000
+2. If using Brave browser, disable Brave Shields for this site
+3. Check your network connection and firewall settings`;
+          } else {
+            errorMessage = `Unable to connect to the server. Please ensure:
+            
+1. The server is running and accessible
+2. If using Brave browser, disable Brave Shields for this site
+3. Check your network connection
+4. The service may be temporarily unavailable`;
+          }
+        } else {
+          errorMessage = err.message;
+        }
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -171,7 +196,7 @@ export default function BrowseProviders() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-2xl">
           <div className="inline-block p-4 bg-red-100 rounded-full mb-4">
             <svg
               className="w-12 h-12 text-red-600"
@@ -187,13 +212,26 @@ export default function BrowseProviders() {
               />
             </svg>
           </div>
-          <p className="text-red-600 mb-4 font-medium">{error}</p>
-          <button
-            onClick={fetchWorkers}
-            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
-          >
-            Retry
-          </button>
+          <div className="bg-white border border-red-200 rounded-lg p-6 mb-4 text-left">
+            <p className="text-red-600 font-semibold mb-2">Connection Error</p>
+            <div className="text-gray-700 whitespace-pre-line text-sm">
+              {error}
+            </div>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={fetchWorkers}
+              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium transition-colors"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => window.location.href = "/"}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+            >
+              Go Home
+            </button>
+          </div>
         </div>
       </div>
     );

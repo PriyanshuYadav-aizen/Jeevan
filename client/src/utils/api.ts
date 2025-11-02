@@ -1,12 +1,47 @@
 /// <reference types="vite/client" />
 // Centralized API definitions
 
-export const development = "http://localhost:7001" as const;
+export const development = "http://localhost:5000" as const;
 export const deployment = "https://jeevan-dphd.onrender.com";
 
-// Simple environment switch: set to "deployment" to use deployment base URL
-export const ENVIRONMENT = "development" as string; // or "deployment"
-export const API_BASE = ENVIRONMENT === "deployment" ? deployment : development;
+// Auto-detect environment: if running on localhost, use development, otherwise use deployment
+// Or use environment variables: VITE_API_BASE_URL or VITE_ENVIRONMENT
+function detectEnvironment() {
+  // Check if VITE_API_BASE_URL is explicitly set
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // Check if VITE_ENVIRONMENT is set
+  const env = import.meta.env.VITE_ENVIRONMENT;
+  if (env === "deployment" || env === "production") {
+    return deployment;
+  }
+  if (env === "development") {
+    return development;
+  }
+  
+  // Auto-detect: if window.location.hostname is localhost or 127.0.0.1, use development
+  // Otherwise, use relative URLs (empty string) when deployed on same domain,
+  // or use deployment URL if backend is on different domain
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "") {
+      return development;
+    }
+    // When deployed, check if we're on the deployment domain
+    if (hostname.includes("render.com") || hostname.includes("jeevan")) {
+      // If frontend and backend are on same domain, use relative URLs
+      // Otherwise use the full deployment URL
+      return ""; // Empty string means relative URLs (same domain)
+    }
+  }
+  
+  // Default to development for SSR/build time
+  return development;
+}
+
+export const API_BASE = detectEnvironment();
 
 export const API_PATHS = {
   root: "/",
