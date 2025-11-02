@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { API_URLS } from "../../utils/api";
+import { API_URLS, normalizeImageUrl } from "../../utils/api";
 import AddressAutocomplete from "../AddressAutocomplete";
 
 type Staff = {
@@ -371,7 +371,7 @@ export default function StaffList() {
                   <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                     <p className="text-sm text-gray-600 mb-2">Current picture:</p>
                     <img
-                      src={editForm.profilePicture}
+                      src={normalizeImageUrl(editForm.profilePicture)}
                       alt="Current profile"
                       className="w-24 h-24 object-cover rounded-lg border border-gray-200"
                     />

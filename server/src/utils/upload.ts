@@ -107,10 +107,11 @@ export const uploadImage = multer({
 });
 
 // Helper function to get file URL
+// Returns relative URL to work in both development and production
+// Relative URLs work because client and server share the same origin
 export function getFileUrl(filename: string, type: "document" | "image"): string {
-  const baseUrl = process.env.BASE_URL || "http://localhost:7001";
   const folder = type === "document" ? "documents" : "images";
-  return `${baseUrl}/uploads/${folder}/${filename}`;
+  return `/uploads/${folder}/${filename}`;
 }
 
 // Helper function to get file path

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_URLS } from "../utils/api";
+import { API_URLS, normalizeImageUrl } from "../utils/api";
 import ReviewModal from "../components/ReviewModal";
 
 type Booking = {
@@ -293,7 +293,7 @@ export default function BookingStatus() {
                     <div className="flex items-center gap-3">
                       {booking.workerId.profilePicture ? (
                         <img
-                          src={booking.workerId.profilePicture}
+                          src={normalizeImageUrl(booking.workerId.profilePicture)}
                           alt={booking.workerId.username}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -438,7 +438,7 @@ export default function BookingStatus() {
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                   {selectedBooking.workerId.profilePicture ? (
                     <img
-                      src={selectedBooking.workerId.profilePicture}
+                      src={normalizeImageUrl(selectedBooking.workerId.profilePicture)}
                       alt={selectedBooking.workerId.username}
                       className="w-16 h-16 rounded-full object-cover"
                     />

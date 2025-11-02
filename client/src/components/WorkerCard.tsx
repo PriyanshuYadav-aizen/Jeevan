@@ -1,4 +1,5 @@
 import StarRating from "./StarRating";
+import { normalizeImageUrl } from "../utils/api";
 
 type Worker = {
   _id: string;
@@ -60,7 +61,7 @@ export default function WorkerCard({ worker, onClick, onBookNow }: WorkerCardPro
       <div className="relative h-48 bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center">
         {worker.profilePicture ? (
           <img
-            src={worker.profilePicture}
+            src={normalizeImageUrl(worker.profilePicture)}
             alt={worker.username}
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
           />

@@ -135,4 +135,22 @@ export const API_URLS = {
   },
 } as const;
 
+// Helper function to normalize image URLs
+// Converts absolute URLs (like http://localhost:7001/uploads/...) to relative URLs (/uploads/...)
+// This fixes mixed content issues and ensures images work in production
+export function normalizeImageUrl(url: string | undefined | null): string {
+  if (!url) return "";
+  
+  // If already relative, return as is
+  if (url.startsWith("/")) return url;
+  
+  // Extract relative path from absolute URLs that contain /uploads/
+  if (url.includes("/uploads/")) {
+    const match = url.match(/\/uploads\/.*$/);
+    if (match) return match[0];
+  }
+  
+  // Return as-is for other URLs
+  return url;
+}
 
