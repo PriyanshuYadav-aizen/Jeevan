@@ -9,15 +9,6 @@ type AddressAutocompleteProps = {
   rows?: number;
 };
 
-type NominatimResponse = {
-  display_name: string;
-  place_id: number;
-  lat: string;
-  lon: string;
-  boundingbox?: string[];
-  address?: Record<string, string>;
-};
-
 export default function AddressAutocomplete({
   value,
   onChange,
@@ -30,7 +21,7 @@ export default function AddressAutocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,8 +55,8 @@ export default function AddressAutocomplete({
           throw new Error("Failed to fetch addresses");
         }
 
-        const data = (await response.json()) as NominatimResponse[];
-        const addresses = data.map((item) => item.display_name);
+        const data = await response.json();
+        const addresses = data.map((item: any) => item.display_name);
         setSuggestions(addresses);
         setShowSuggestions(true);
       } catch (error) {

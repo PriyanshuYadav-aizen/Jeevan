@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_URLS, normalizeImageUrl } from "../utils/api";
+import { API_URLS } from "../utils/api";
 import AddressAutocomplete from "../components/AddressAutocomplete";
 
 type WorkerProfile = {
@@ -369,7 +369,7 @@ export default function WorkerDashboard() {
                 </div>
                 {workerProfile?.profilePicture && (
                   <img
-                    src={normalizeImageUrl(workerProfile.profilePicture)}
+                    src={workerProfile.profilePicture}
                     alt="Profile"
                     className="w-16 h-16 rounded-full border-2 border-teal-500 object-cover"
                   />
@@ -745,7 +745,7 @@ export default function WorkerDashboard() {
                       {workerProfile?.profilePicture && (
                         <div className="flex justify-center mb-6">
                           <img
-                            src={normalizeImageUrl(workerProfile.profilePicture)}
+                            src={workerProfile.profilePicture}
                             alt="Profile"
                             className="w-32 h-32 rounded-full object-cover border-4 border-teal-500"
                           />

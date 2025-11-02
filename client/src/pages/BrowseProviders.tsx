@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import WorkerCard from "../components/WorkerCard";
 import BookingForm from "../components/BookingForm";
-import { API_URLS, normalizeImageUrl } from "../utils/api";
+import { API_URLS } from "../utils/api";
 import FindWithAI from "../components/FindWithAI";
 import StarRating from "../components/StarRating";
 
@@ -353,7 +353,7 @@ export default function BrowseProviders() {
               <div className="flex flex-col md:flex-row gap-6 mb-6">
                 {selectedWorker.profilePicture ? (
                   <img
-                    src={normalizeImageUrl(selectedWorker.profilePicture)}
+                    src={selectedWorker.profilePicture}
                     alt={selectedWorker.username}
                     className="w-32 h-32 rounded-full object-cover border-4 border-teal-500 mx-auto md:mx-0"
                   />

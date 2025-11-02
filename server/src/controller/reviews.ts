@@ -32,7 +32,6 @@ async function updateWorkerRatings(workerId: string, workerRole: string) {
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
       : 0;
 
-  // Type assertion needed because TypeScript sees different model types
   await (WorkerModel as any).findByIdAndUpdate(workerId, {
     averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
     reviewCount,

@@ -2,10 +2,10 @@
 // Centralized API definitions
 
 export const development = "http://localhost:7001" as const;
-export const deployment = "https://jeevan-dphd.onrender.com";
+export const deployment = "https://api.example.com";
 
 // Simple environment switch: set to "deployment" to use deployment base URL
-export const ENVIRONMENT = "deployment" as string; // or "deployment"
+export const ENVIRONMENT = "development" as string; // or "deployment"
 export const API_BASE = ENVIRONMENT === "deployment" ? deployment : development;
 
 export const API_PATHS = {
@@ -135,22 +135,4 @@ export const API_URLS = {
   },
 } as const;
 
-// Helper function to normalize image URLs
-// Converts absolute URLs (like http://localhost:7001/uploads/...) to relative URLs (/uploads/...)
-// This fixes mixed content issues and ensures images work in production
-export function normalizeImageUrl(url: string | undefined | null): string {
-  if (!url) return "";
-  
-  // If already relative, return as is
-  if (url.startsWith("/")) return url;
-  
-  // Extract relative path from absolute URLs that contain /uploads/
-  if (url.includes("/uploads/")) {
-    const match = url.match(/\/uploads\/.*$/);
-    if (match) return match[0];
-  }
-  
-  // Return as-is for other URLs
-  return url;
-}
 
