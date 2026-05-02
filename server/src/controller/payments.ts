@@ -72,8 +72,31 @@ export const createOrder = async (req: Request, res: Response) => {
       keyId: process.env.RAZORPAY_KEY_ID // Safe to expose key ID
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error creating Razorpay order" });
+    console.error("Razorpay order creation failed:", error);
+
+    const razorpayError = error as {
+      statusCode?: number;
+      error?: { description?: string; code?: string };
+      response?: { body?: { error?: { description?: string; code?: string } } };
+      message?: string;
+    };
+
+    const errorDescription =
+      razorpayError.error?.description ||
+      razorpayError.response?.body?.error?.description ||
+      razorpayError.message ||
+      "Error creating Razorpay order";
+
+    if (razorpayError.statusCode === 401) {
+      return res.status(401).json({
+        success: false,
+        message:
+          "Razorpay authentication failed. Check that RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server/.env are a valid matching pair from the same Razorpay account.",
+        details: errorDescription,
+      });
+    }
+
+    res.status(500).json({ success: false, message: errorDescription });
   }
 };
 

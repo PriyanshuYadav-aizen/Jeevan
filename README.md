@@ -226,6 +226,28 @@ This document outlines product scope, user journeys, pages, and UI/UX structure 
 - Staff: Applications (list/view/approve/reject), Users (list/view/update/delete), Staff (no access)
 - Public: Submit application, check status, login
 
+## Deployment
+
+The simplest production setup is a single Render web service that runs the Node server and serves the built React app from `client/dist`.
+
+1. Create a new Render Web Service from this repository.
+2. Set the service root directory to `server`.
+3. Use this build command:
+
+  `npm install && npm run build && cd ../client && npm install && npm run build`
+
+4. Use this start command:
+
+  `npm start`
+
+5. Add the required environment variables in Render:
+
+  `MONGODB_URI`, `JWT_SECRET`, `BLACKBOX_API_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+
+6. Deploy the service.
+
+If you want to deploy the client separately, set `VITE_API_BASE_URL` to the backend URL before building the frontend.
+
 ### Page-by-Page UX Details
 
 1. Home (Public)

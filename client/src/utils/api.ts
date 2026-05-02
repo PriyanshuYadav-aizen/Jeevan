@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 // Centralized API definitions
 
-export const development = "http://localhost:5000" as const;
+export const development = "http://localhost:7001" as const;
 export const deployment = "https://jeevan-dphd.onrender.com";
 
 // Auto-detect environment: if running on localhost, use development, otherwise use deployment

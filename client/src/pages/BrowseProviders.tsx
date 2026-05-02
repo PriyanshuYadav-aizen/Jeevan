@@ -86,9 +86,9 @@ export default function BrowseProviders() {
         } else if (err.message.includes("Failed to fetch") || err.message.includes("network") || err.message.includes("ERR_")) {
           const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
           if (isLocalhost) {
-            errorMessage = `Unable to connect to server at ${API_URLS.base || "http://localhost:5000"}. Please ensure:
+            errorMessage = `Unable to connect to server at ${API_URLS.base || "http://localhost:7001"}. Please ensure:
             
-1. The server is running on port 5000
+1. The server is running on port 7001
 2. If using Brave browser, disable Brave Shields for this site
 3. Check your network connection and firewall settings`;
           } else {

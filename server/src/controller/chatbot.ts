@@ -6,12 +6,30 @@ function validateQuestion(question: string): { valid: boolean; message?: string 
     return { valid: false, message: "Please enter a question." };
   }
 
-  // Very lenient - just check if it has at least 3 characters
-  if (question.trim().length < 3) {
-    return { valid: false, message: "Please enter a valid question." };
+  return { valid: true };
+}
+
+function generateFallbackMedicalResponse(message: string): string {
+  const normalizedMessage = message.toLowerCase().trim();
+
+  if (/^(hi|hello|hey|hii|hiii)$/.test(normalizedMessage)) {
+    return "Hello. Tell me what symptoms you have, and I will try to help with general guidance.";
   }
 
-  return { valid: true };
+  if (normalizedMessage.includes("fever")) {
+    return [
+      "Fever is often caused by an infection or inflammation.",
+      "Rest, drink plenty of fluids, and keep monitoring the temperature.",
+      "If this is an adult and you normally take it safely, paracetamol or acetaminophen may help.",
+      "Get urgent medical care if the fever is very high, lasts more than 3 days, or comes with trouble breathing, confusion, chest pain, severe headache, stiff neck, or dehydration.",
+    ].join(" ");
+  }
+
+  if (normalizedMessage.includes("cough") || normalizedMessage.includes("cold")) {
+    return "For cough or cold symptoms, rest, fluids, and monitoring are a good start. If you have shortness of breath, chest pain, wheezing, or symptoms that are getting worse, please get medical care promptly.";
+  }
+
+  return "I am having trouble reaching the medical AI right now. Please share your symptoms, and I can still give general health guidance.";
 }
 
 export async function chatWithAI(req: Request, res: Response) {
@@ -32,7 +50,11 @@ export async function chatWithAI(req: Request, res: Response) {
     const apiKey = process.env.BLACKBOX_API_KEY; // Keep using BLACKBOX_API_KEY env var name
     if (!apiKey) {
       console.error("BLACKBOX_API_KEY (Gemini API Key) is not configured in environment variables");
-      return res.status(500).json({ error: "Chatbot service is not configured" });
+      return res.json({
+        response: generateFallbackMedicalResponse(message),
+        timestamp: new Date().toISOString(),
+        fallback: true,
+      });
     }
 
     console.log("Calling Google Gemini API with message:", message.substring(0, 50) + "...");
@@ -154,10 +176,13 @@ Please provide a complete, detailed, and helpful response:`
     // If all models failed
     if (!data || !data.candidates) {
       console.error("All Gemini models failed. Last error:", lastError);
-      const errorMessage = lastError?.error?.message || lastError?.message || "All model attempts failed";
-      return res.status(500).json({
-        error: "Failed to process your question. Please try again later.",
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+      return res.json({
+        response: generateFallbackMedicalResponse(message),
+        timestamp: new Date().toISOString(),
+        fallback: true,
+        details: process.env.NODE_ENV === "development"
+          ? lastError?.error?.message || lastError?.message || "All model attempts failed"
+          : undefined,
       });
     }
 
@@ -166,8 +191,10 @@ Please provide a complete, detailed, and helpful response:`
     
     if (!candidate) {
       console.error("No candidate in Gemini API response:", JSON.stringify(data, null, 2));
-      return res.status(500).json({
-        error: "Failed to generate a response. Please try again.",
+      return res.json({
+        response: generateFallbackMedicalResponse(message),
+        timestamp: new Date().toISOString(),
+        fallback: true,
         details: process.env.NODE_ENV === "development" ? "No candidate in API response" : undefined,
       });
     }
@@ -189,8 +216,10 @@ Please provide a complete, detailed, and helpful response:`
 
     if (!aiResponse) {
       console.error("No text in Gemini API response:", JSON.stringify(data, null, 2));
-      return res.status(500).json({
-        error: "Failed to generate a response. Please try again.",
+      return res.json({
+        response: generateFallbackMedicalResponse(message),
+        timestamp: new Date().toISOString(),
+        fallback: true,
         details: process.env.NODE_ENV === "development" ? "No text in API response" : undefined,
       });
     }
@@ -202,20 +231,21 @@ Please provide a complete, detailed, and helpful response:`
   } catch (error: any) {
     console.error("Chatbot error:", error);
     console.error("Error stack:", error.stack);
-    
-    // Provide more detailed error in development
-    const errorDetails = process.env.NODE_ENV === "development" 
-      ? {
-          message: error.message,
-          stack: error.stack,
-          apiKeyPresent: !!process.env.BLACKBOX_API_KEY,
-          apiKeyLength: process.env.BLACKBOX_API_KEY?.length || 0,
-        }
-      : undefined;
 
-    return res.status(500).json({
-      error: "Failed to process your question. Please try again later.",
-      details: errorDetails,
+    const message = typeof req.body?.message === "string" ? req.body.message : "";
+
+    return res.json({
+      response: generateFallbackMedicalResponse(message),
+      timestamp: new Date().toISOString(),
+      fallback: true,
+      details: process.env.NODE_ENV === "development"
+        ? {
+            message: error.message,
+            stack: error.stack,
+            apiKeyPresent: !!process.env.BLACKBOX_API_KEY,
+            apiKeyLength: process.env.BLACKBOX_API_KEY?.length || 0,
+          }
+        : undefined,
     });
   }
 }

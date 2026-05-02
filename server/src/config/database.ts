@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const connectDB = async (): Promise<void> => {
   try {
     const mongoURI = process.env.MONGODB_URI;
+    const fallbackMongoURI = process.env.MONGODB_URI_LOCAL || "mongodb://127.0.0.1:27017/jeevan";
 
     if (!mongoURI) {
       throw new Error("MONGODB_URI is not defined in environment variables");
@@ -17,7 +18,18 @@ const connectDB = async (): Promise<void> => {
       socketTimeoutMS: 45000, // How long a send or receive on a socket can take
     };
 
-    await mongoose.connect(mongoURI, connectionOptions);
+    try {
+      await mongoose.connect(mongoURI, connectionOptions);
+    } catch (primaryError) {
+      const isDevelopment = process.env.NODE_ENV !== "production";
+
+      if (!isDevelopment) {
+        throw primaryError;
+      }
+
+      console.warn("⚠️ Primary MongoDB URI failed, retrying with local MongoDB:", primaryError);
+      await mongoose.connect(fallbackMongoURI, connectionOptions);
+    }
 
     console.log("✅ MongoDB connected successfully");
     console.log(
@@ -25,7 +37,10 @@ const connectDB = async (): Promise<void> => {
     );
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
-    process.exit(1);
+
+    if (process.env.NODE_ENV === "production") {
+      process.exit(1);
+    }
   }
 };
 
