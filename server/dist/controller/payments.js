@@ -63,6 +63,7 @@ function getRazorpayInstance() {
 }
 // ✅ Create Razorpay order
 const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
     try {
         const { amount, paidTo, serviceType, serviceReference, description, platformCommission } = req.body;
         const userId = req.userId; // From JWT middleware
@@ -109,8 +110,20 @@ const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
     }
     catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Error creating Razorpay order" });
+        console.error("Razorpay order creation failed:", error);
+        const razorpayError = error;
+        const errorDescription = ((_a = razorpayError.error) === null || _a === void 0 ? void 0 : _a.description) ||
+            ((_d = (_c = (_b = razorpayError.response) === null || _b === void 0 ? void 0 : _b.body) === null || _c === void 0 ? void 0 : _c.error) === null || _d === void 0 ? void 0 : _d.description) ||
+            razorpayError.message ||
+            "Error creating Razorpay order";
+        if (razorpayError.statusCode === 401) {
+            return res.status(401).json({
+                success: false,
+                message: "Razorpay authentication failed. Check that RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server/.env are a valid matching pair from the same Razorpay account.",
+                details: errorDescription,
+            });
+        }
+        res.status(500).json({ success: false, message: errorDescription });
     }
 });
 exports.createOrder = createOrder;
