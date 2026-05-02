@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
 import AddressAutocomplete from "./AddressAutocomplete";
+import { useToast } from "./ToastProvider";
 
 type Worker = {
   _id: string;
@@ -18,6 +20,8 @@ type BookingFormProps = {
 };
 
 export default function BookingForm({ worker, onSuccess, onCancel }: BookingFormProps) {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     serviceType: "hourly" as "hourly" | "daily" | "weekly",
     startDate: "",
@@ -33,6 +37,8 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showOrderSummary, setShowOrderSummary] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
   const [userProfile, setUserProfile] = useState<{ username?: string; email?: string; phone?: string; address?: string } | null>(null);
 
@@ -86,15 +92,32 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    const nextErrors: Record<string, string> = {};
+    if (!formData.startDate) nextErrors.startDate = "Start date is required";
+    if (!formData.endDate) nextErrors.endDate = "End date is required";
+    if (!formData.startTime) nextErrors.startTime = "Start time is required";
+    if (!formData.endTime) nextErrors.endTime = "End time is required";
+    if (!formData.patientName.trim()) nextErrors.patientName = "Patient name is required";
+    if (!formData.patientPhone.trim()) nextErrors.patientPhone = "Patient phone is required";
+    if (!formData.serviceAddress.trim()) nextErrors.serviceAddress = "Service address is required";
+    if (!formData.duration || formData.duration < 1) nextErrors.duration = "Duration must be at least 1";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
       setError("Please login to book a service");
-      setLoading(false);
+      showToast("Please login to book a service", "error");
       return;
     }
+
+    if (!showOrderSummary) {
+      setShowOrderSummary(true);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       // Step 1: Create booking first (with pending payment status)
@@ -186,25 +209,44 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
             if (verifyResponse.ok && verifyData.success) {
               // Payment verified successfully - booking is now confirmed
               setLoading(false);
-              alert("Payment successful! Your booking has been confirmed.");
+              showToast("Payment successful! Your booking has been confirmed.", "success");
               if (onSuccess) {
                 onSuccess();
               }
+              navigate("/payment-success", {
+                replace: true,
+                state: {
+                  bookingId,
+                  paymentId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                  amount: totalAmount,
+                  service: `${worker.role} ${formData.serviceType} service`,
+                  workerName: worker.username,
+                },
+              });
             } else {
-              setError(verifyData.message || "Payment verification failed");
+              const reason = verifyData.message || "Payment verification failed";
+              setError(reason);
+              showToast(reason, "error");
               setLoading(false);
+              navigate("/payment-failed", { state: { reason } });
             }
           } catch (verifyErr) {
             console.error("Payment verification error:", verifyErr);
-            setError("Payment verification failed. Please contact support.");
+            const reason = "Payment verification failed. Please contact support.";
+            setError(reason);
+            showToast(reason, "error");
             setLoading(false);
+            navigate("/payment-failed", { state: { reason } });
           }
         },
         modal: {
           ondismiss: function () {
             // User closed the payment modal
             setLoading(false);
-            setError("Payment cancelled");
+            const reason = "Payment cancelled. You can try again when ready.";
+            setError(reason);
+            showToast(reason, "error");
           },
         },
       };
@@ -235,8 +277,11 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
       // Keep loading state until payment is complete or cancelled
     } catch (err) {
       console.error("Booking error:", err);
-      setError(err instanceof Error ? err.message : "Failed to create booking");
+      const reason = err instanceof Error ? err.message : "Failed to create booking";
+      setError(reason);
+      showToast(reason, "error");
       setLoading(false);
+      navigate("/payment-failed", { state: { reason } });
     }
   }
 
@@ -305,7 +350,8 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
               setFormData((prev) => ({ ...prev, startDate: e.target.value }))
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          />
+        />
+        {fieldErrors.startDate && <p className="mt-1 text-xs text-red-600">{fieldErrors.startDate}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -320,7 +366,8 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
               setFormData((prev) => ({ ...prev, endDate: e.target.value }))
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          />
+        />
+        {fieldErrors.endDate && <p className="mt-1 text-xs text-red-600">{fieldErrors.endDate}</p>}
         </div>
       </div>
 
@@ -337,7 +384,8 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
               setFormData((prev) => ({ ...prev, startTime: e.target.value }))
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          />
+        />
+        {fieldErrors.startTime && <p className="mt-1 text-xs text-red-600">{fieldErrors.startTime}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -351,7 +399,8 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
               setFormData((prev) => ({ ...prev, endTime: e.target.value }))
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          />
+        />
+        {fieldErrors.endTime && <p className="mt-1 text-xs text-red-600">{fieldErrors.endTime}</p>}
         </div>
       </div>
 
@@ -370,6 +419,7 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
           }
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
         />
+        {fieldErrors.duration && <p className="mt-1 text-xs text-red-600">{fieldErrors.duration}</p>}
       </div>
 
       {/* Patient Details - Auto-filled from profile if logged in */}
@@ -386,6 +436,7 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
           }
           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${userProfile ? "bg-gray-50" : ""}`}
         />
+        {fieldErrors.patientName && <p className="mt-1 text-xs text-red-600">{fieldErrors.patientName}</p>}
         {userProfile && (
           <p className="text-xs text-gray-500 mt-1">Auto-filled from your profile</p>
         )}
@@ -404,6 +455,7 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
           }
           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${userProfile ? "bg-gray-50" : ""}`}
         />
+        {fieldErrors.patientPhone && <p className="mt-1 text-xs text-red-600">{fieldErrors.patientPhone}</p>}
         {userProfile && (
           <p className="text-xs text-gray-500 mt-1">Auto-filled from your profile</p>
         )}
@@ -423,6 +475,7 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
           required
           rows={3}
         />
+        {fieldErrors.serviceAddress && <p className="mt-1 text-xs text-red-600">{fieldErrors.serviceAddress}</p>}
         {userProfile && formData.serviceAddress && (
           <p className="text-xs text-gray-500 mt-1">Auto-filled from your profile</p>
         )}
@@ -454,6 +507,27 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
         </p>
       </div>
 
+      {showOrderSummary && (
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900">Order Summary</h3>
+          <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <p><span className="font-semibold">Provider:</span> {worker.username}</p>
+            <p><span className="font-semibold">Service:</span> {worker.role} ({formData.serviceType})</p>
+            <p><span className="font-semibold">Duration:</span> {formData.duration}</p>
+            <p><span className="font-semibold">Date:</span> {formData.startDate} to {formData.endDate}</p>
+            <p className="sm:col-span-2"><span className="font-semibold">Amount payable:</span> Rs. {totalAmount.toLocaleString()}</p>
+          </div>
+          {error && (
+            <button
+              type="submit"
+              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Try Again
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-3 pt-4">
         <button
@@ -461,7 +535,12 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
           disabled={loading}
           className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
         >
-          {loading ? "Processing..." : "Proceed to Payment"}
+          {loading ? (
+            <span className="inline-flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Processing...
+            </span>
+          ) : showOrderSummary ? "Confirm and Pay" : "Review Order"}
         </button>
         {onCancel && (
           <button

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AddressAutocomplete from "../components/AddressAutocomplete";
 import { API_URLS } from "../utils/api";
+import { useToast } from "../components/ToastProvider";
 
 type Role = "Nurse" | "Caretaker" | "Compounder";
 
@@ -10,6 +11,7 @@ type ApplicationResponse = {
 };
 
 export default function Application() {
+  const { showToast } = useToast();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,6 +34,7 @@ export default function Application() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Convert file to base64
   function fileToBase64(file: File): Promise<string> {
@@ -48,16 +51,23 @@ export default function Application() {
     setSubmitting(true);
     setMessage(null);
     setError(null);
+    const nextErrors: Record<string, string> = {};
 
     // Validation
+    if (!username.trim()) nextErrors.username = "Full name is required";
+    if (!email.trim()) nextErrors.email = "Email is required";
+    if (!phone.trim()) nextErrors.phone = "Phone number is required";
+    if (!password) nextErrors.password = "Password is required";
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setSubmitting(false);
-      return;
+      nextErrors.confirmPassword = "Passwords do not match";
     }
 
     if (!role) {
-      setError("Please select a role");
+      nextErrors.role = "Please select a role";
+    }
+
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       setSubmitting(false);
       return;
     }
@@ -108,8 +118,10 @@ export default function Application() {
         const text = await res.text();
         if (res.status === 413) {
           setError("File size too large. Please ensure each file is less than 5MB.");
+          showToast("File size too large. Please ensure each file is less than 5MB.", "error");
         } else {
           setError(`Server returned an error. Check if the endpoint exists. Status: ${res.status}`);
+          showToast("Server returned an error. Please try again.", "error");
         }
         console.error("Non-JSON response:", text.substring(0, 200));
         return;
@@ -120,13 +132,16 @@ export default function Application() {
       if (!res.ok) {
         if (res.status === 413) {
           setError("File size too large. Please ensure each file is less than 5MB.");
+          showToast("File size too large. Please ensure each file is less than 5MB.", "error");
         } else {
           setError(data?.message || `Failed to submit application (Status: ${res.status})`);
+          showToast(data?.message || "Failed to submit application", "error");
         }
         return;
       }
 
       setMessage("Application submitted successfully! Your application is under review.");
+      showToast("Application submitted successfully", "success");
       setApplicationId(data.applicationId || null);
       
       // Reset form
@@ -151,6 +166,7 @@ export default function Application() {
       console.error("Application submission error:", err);
       const errorMessage = err instanceof Error ? err.message : "Network error. Please check if the server is running.";
       setError(`Error: ${errorMessage}. Make sure the backend server is running on http://localhost:7001`);
+      showToast("Application submission failed. Please try again.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -201,6 +217,7 @@ export default function Application() {
                   </button>
                 ))}
               </div>
+              {fieldErrors.role && <p className="mt-2 text-xs text-red-600">{fieldErrors.role}</p>}
             </div>
 
             {/* Basic Information */}
@@ -217,6 +234,7 @@ export default function Application() {
                   placeholder="Enter your full name"
                   required
                 />
+                {fieldErrors.username && <p className="mt-1 text-xs text-red-600">{fieldErrors.username}</p>}
               </div>
 
               <div>
@@ -231,6 +249,7 @@ export default function Application() {
                   placeholder="email@example.com"
                   required
                 />
+                {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
               </div>
 
               <div>
@@ -245,6 +264,7 @@ export default function Application() {
                   placeholder="+91 9876543210"
                   required
                 />
+                {fieldErrors.phone && <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>}
               </div>
 
               <div>
@@ -334,6 +354,7 @@ export default function Application() {
                   required
                   minLength={6}
                 />
+                {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
               </div>
 
               <div>
@@ -349,6 +370,7 @@ export default function Application() {
                   required
                   minLength={6}
                 />
+                {fieldErrors.confirmPassword && <p className="mt-1 text-xs text-red-600">{fieldErrors.confirmPassword}</p>}
               </div>
             </div>
 
@@ -625,7 +647,12 @@ export default function Application() {
                 disabled={submitting}
                 className="inline-flex items-center justify-center rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-medium px-6 py-3"
               >
-                {submitting ? "Submitting..." : "Submit Application"}
+                {submitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Submitting...
+                  </span>
+                ) : "Submit Application"}
               </button>
               
               {message && (

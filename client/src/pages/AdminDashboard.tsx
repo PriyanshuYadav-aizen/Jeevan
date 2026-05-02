@@ -55,9 +55,9 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 lg:flex">
       <AdminSidebar />
-      <main className="flex-1 ml-64">
+      <main className="flex-1 lg:ml-64">
         <section className="w-full min-h-screen py-8">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="mb-8">

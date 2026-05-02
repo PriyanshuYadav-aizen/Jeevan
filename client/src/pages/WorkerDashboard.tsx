@@ -62,7 +62,7 @@ export default function WorkerDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/admin/login");
+      navigate("/login");
       return;
     }
 
@@ -158,7 +158,7 @@ export default function WorkerDashboard() {
 
   function handleLogout() {
     localStorage.removeItem("token");
-    navigate("/admin/login");
+    navigate("/login");
   }
 
   function fileToBase64(file: File): Promise<string> {
@@ -301,7 +301,7 @@ export default function WorkerDashboard() {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => navigate("/admin/login")}
+            onClick={() => navigate("/login")}
             className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
           >
             Go to Login
@@ -312,15 +312,15 @@ export default function WorkerDashboard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 lg:flex">
       {/* Sidebar */}
-      <aside className="w-64 min-h-screen bg-white border-r border-gray-200 shadow-sm fixed left-0 top-0 pt-16">
+      <aside className="w-full border-b border-gray-200 bg-white shadow-sm lg:fixed lg:left-0 lg:top-0 lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r lg:pt-16">
         <div className="p-4">
-          <div className="mb-8 px-3">
+          <div className="mb-4 px-3 lg:mb-8">
             <h2 className="text-xl font-extrabold text-gray-900">Worker Portal</h2>
             <p className="text-sm text-gray-500 mt-1">Jeevan 108</p>
           </div>
-          <nav className="space-y-1">
+          <nav className="flex gap-2 overflow-x-auto lg:block lg:space-y-1">
             {[
               { label: "Overview", tab: "overview" as const },
               { label: "Documents", tab: "documents" as const },
@@ -331,7 +331,7 @@ export default function WorkerDashboard() {
               <button
                 key={item.tab}
                 onClick={() => setActiveTab(item.tab)}
-                className={`w-full text-left flex items-center px-4 py-3 rounded-lg transition-colors ${
+                className={`flex shrink-0 items-center px-4 py-3 text-left rounded-lg transition-colors lg:w-full ${
                   activeTab === item.tab
                     ? "bg-teal-50 text-teal-700 font-semibold border-l-4 border-teal-500"
                     : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
@@ -353,12 +353,12 @@ export default function WorkerDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
+      <main className="flex-1 lg:ml-64">
         <section className="w-full min-h-screen py-8">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">
                     {getRoleDisplayName(workerProfile?.role)} Dashboard

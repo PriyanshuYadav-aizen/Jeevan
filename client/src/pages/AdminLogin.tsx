@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
+import { useToast } from "../components/ToastProvider";
 
 type LoginResponse = {
   token?: string;
@@ -18,8 +19,11 @@ type AllowedRole = "Admin" | "Staff" | "Nurse" | "Caretaker" | "Compounder" | "P
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -45,6 +49,12 @@ export default function AdminLogin() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    const nextErrors: Record<string, string> = {};
+    if (!email.trim()) nextErrors.email = "Email is required";
+    if (!password) nextErrors.password = "Password is required";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     setLoading(true);
     try {
       const res = await fetch(API_URLS.auth.login(), {
@@ -83,12 +93,15 @@ export default function AdminLogin() {
       }
 
       // Redirect based on role
-      const redirectPath = getRedirectPath(role);
+      const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+      const redirectPath = from && from !== "/admin/login" ? from : getRedirectPath(role);
       setSuccess(`Logged in as ${role}.`);
+      showToast("Login successful", "success");
       navigate(redirectPath, { replace: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -136,6 +149,7 @@ export default function AdminLogin() {
           placeholder="admin@example.com"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
         />
+        {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
 
         <label className="block text-xs font-medium text-slate-600 mt-4 mb-1">Password</label>
         <input
@@ -146,6 +160,7 @@ export default function AdminLogin() {
           placeholder="••••••••"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
         />
+        {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
 
         {error && (
           <div className="mt-3 text-sm text-red-800 bg-red-100 border border-red-200 rounded-lg px-3 py-2">
@@ -163,7 +178,12 @@ export default function AdminLogin() {
           disabled={loading}
           className="mt-4 w-full rounded-lg border border-teal-600 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white font-semibold px-3 py-2 transition-colors"
         >
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Signing in...
+            </span>
+          ) : "Sign in"}
         </button>
 
         <div className="mt-4 text-center text-sm text-slate-600">

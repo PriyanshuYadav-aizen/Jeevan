@@ -1,5 +1,6 @@
 import Navbar from "./Navbar";
 import heroImg from "../assets/hero.avif";
+import { Link } from "react-router-dom";
 
 export default function Hero() {
   return (
@@ -58,24 +59,24 @@ export default function Hero() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col gap-3 pt-4">
-              <a 
-                href="/browse"
+              <Link 
+                to="/browse"
                 className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3.5 px-6 rounded-lg shadow-lg transition-colors"
               >
                 Find Healthcare Provider
-              </a>
-              <a 
-                href="/apply"
+              </Link>
+              <Link 
+                to="/apply"
                 className="w-full bg-white hover:bg-gray-50 text-teal-600 font-semibold py-3.5 px-6 rounded-lg border-2 border-teal-500 transition-colors"
               >
                 Join as Professional
-              </a>
+              </Link>
             </div>
 
             {/* Trust Badge */}
             <div className="pt-6 flex items-center justify-center gap-2 text-sm text-gray-500">
               <svg className="w-5 h-5 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <span>Verified & Certified Professionals</span>
             </div>

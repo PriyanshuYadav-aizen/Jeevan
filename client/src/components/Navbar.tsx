@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { API_URLS } from "../utils/api";
 
@@ -79,9 +79,18 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
     setUserInfo(null);
-    navigate("/");
-    window.location.reload(); // Refresh to update UI
+    navigate("/login", { replace: true });
   }
+
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? "bg-teal-500 text-white rounded-full px-4 xl:px-6 py-1.5 xl:py-2 font-extrabold text-sm xl:text-base"
+      : "font-extrabold text-base xl:text-[20px] text-slate-800 hover:text-teal-500 transition-colors";
+
+  const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? "bg-teal-500 text-white rounded-full px-4 py-2 font-extrabold text-center text-sm sm:text-base"
+      : "font-extrabold text-base sm:text-lg text-slate-800 hover:text-teal-500 transition-colors text-center py-2";
 
   return (
     <div className={["w-full flex justify-center pt-2 sm:pt-4", className].filter(Boolean).join(" ")} {...rest}>
@@ -97,37 +106,22 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
 
         {/* Desktop Menu */}
         <div className="hidden lg:flex ml-auto items-center gap-6 xl:gap-9">
-          <span 
-            onClick={() => navigate("/")}
-            className="bg-teal-400 text-white rounded-full px-4 xl:px-6 py-1.5 xl:py-2 font-extrabold cursor-pointer text-sm xl:text-base"
-          >
+          <NavLink to="/" className={navLinkClass}>
             Home
-          </span>
-          <span 
-            onClick={() => navigate("/browse")}
-            className="font-extrabold text-base xl:text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
-          >
+          </NavLink>
+          <NavLink to="/browse" className={navLinkClass}>
             Browse Providers
-          </span>
-          <span 
-            onClick={() => navigate("/apply")}
-            className="font-extrabold text-base xl:text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
-          >
+          </NavLink>
+          <NavLink to="/apply" className={navLinkClass}>
             Apply
-          </span>
-          <span 
-            onClick={() => navigate("/bookings")}
-            className="font-extrabold text-base xl:text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
-          >
+          </NavLink>
+          <NavLink to="/bookings" className={navLinkClass}>
             Check Status
-          </span>
+          </NavLink>
           {!isLoggedIn && (
-            <span 
-              onClick={() => navigate("/signup")}
-              className="font-extrabold text-base xl:text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
-            >
+            <NavLink to="/signup" className={navLinkClass}>
               Sign Up
-            </span>
+            </NavLink>
           )}
           
           {loading ? (
@@ -153,7 +147,7 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
             </div>
           ) : (
             <button
-              onClick={() => navigate("/admin/login")}
+              onClick={() => navigate("/login")}
               className="bg-teal-400 text-white rounded-full px-4 xl:px-6 py-1.5 xl:py-2 font-extrabold cursor-pointer text-sm xl:text-base"
             >
               Login
@@ -186,7 +180,7 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
             </div>
           ) : (
             <button
-              onClick={() => navigate("/admin/login")}
+              onClick={() => navigate("/login")}
               className="bg-teal-400 text-white rounded-full px-3 sm:px-4 py-1 sm:py-1.5 font-extrabold cursor-pointer text-xs sm:text-sm"
             >
               Login
@@ -216,52 +210,22 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
       {isMobileMenuOpen && (
         <div className="lg:hidden w-[96%] sm:w-[94%] max-w-[1100px] mt-2 bg-rose-50 rounded-2xl p-4 shadow-lg">
           <div className="flex flex-col gap-3">
-            <span 
-              onClick={() => {
-                navigate("/");
-                setIsMobileMenuOpen(false);
-              }}
-              className="bg-teal-400 text-white rounded-full px-4 py-2 font-extrabold cursor-pointer text-center text-sm sm:text-base"
-            >
+            <NavLink to="/" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClass}>
               Home
-            </span>
-            <span 
-              onClick={() => {
-                navigate("/browse");
-                setIsMobileMenuOpen(false);
-              }}
-              className="font-extrabold text-base sm:text-lg cursor-pointer hover:text-teal-400 transition-colors text-center py-2"
-            >
+            </NavLink>
+            <NavLink to="/browse" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClass}>
               Browse Providers
-            </span>
-            <span 
-              onClick={() => {
-                navigate("/apply");
-                setIsMobileMenuOpen(false);
-              }}
-              className="font-extrabold text-base sm:text-lg cursor-pointer hover:text-teal-400 transition-colors text-center py-2"
-            >
+            </NavLink>
+            <NavLink to="/apply" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClass}>
               Apply
-            </span>
-            <span 
-              onClick={() => {
-                navigate("/bookings");
-                setIsMobileMenuOpen(false);
-              }}
-              className="font-extrabold text-base sm:text-lg cursor-pointer hover:text-teal-400 transition-colors text-center py-2"
-            >
+            </NavLink>
+            <NavLink to="/bookings" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClass}>
               Check Status
-            </span>
+            </NavLink>
             {!isLoggedIn && (
-              <span 
-                onClick={() => {
-                  navigate("/signup");
-                  setIsMobileMenuOpen(false);
-                }}
-                className="font-extrabold text-base sm:text-lg cursor-pointer hover:text-teal-400 transition-colors text-center py-2"
-              >
+              <NavLink to="/signup" onClick={() => setIsMobileMenuOpen(false)} className={mobileNavLinkClass}>
                 Sign Up
-              </span>
+              </NavLink>
             )}
             {isLoggedIn && userInfo && (
               <div className="border-t border-gray-300 pt-3 mt-2">

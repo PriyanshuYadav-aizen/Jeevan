@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { API_URLS } from "../utils/api";
 import AddressAutocomplete from "../components/AddressAutocomplete";
+import { useToast } from "../components/ToastProvider";
 
 export default function PatientSignUp() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -15,6 +17,7 @@ export default function PatientSignUp() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
 
@@ -32,6 +35,7 @@ export default function PatientSignUp() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setError("Profile picture must be less than 5MB");
+        showToast("Profile picture must be less than 5MB", "error");
         return;
       }
       setProfilePicture(file);
@@ -51,15 +55,24 @@ export default function PatientSignUp() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const nextErrors: Record<string, string> = {};
+    if (!formData.username.trim()) nextErrors.username = "Full name is required";
+    if (!formData.email.trim()) nextErrors.email = "Email is required";
+    if (!formData.phone.trim()) nextErrors.phone = "Phone is required";
+    if (!formData.password) nextErrors.password = "Password is required";
+    if (!formData.confirmPassword) nextErrors.confirmPassword = "Please confirm your password";
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
+      nextErrors.confirmPassword = "Passwords do not match";
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      nextErrors.password = "Password must be at least 6 characters long";
+    }
+
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
@@ -95,11 +108,13 @@ export default function PatientSignUp() {
       }
 
       // Registration successful, redirect to login
-      alert("Registration successful! Please login to continue.");
+      showToast("Registration successful! Please login to continue.", "success");
       navigate("/admin/login");
     } catch (err) {
       console.error("Registration error:", err);
-      setError(err instanceof Error ? err.message : "Failed to create account");
+      const message = err instanceof Error ? err.message : "Failed to create account";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -170,6 +185,7 @@ export default function PatientSignUp() {
               placeholder="John Doe"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.username && <p className="mt-1 text-xs text-red-600">{fieldErrors.username}</p>}
           </div>
 
           <div>
@@ -182,6 +198,7 @@ export default function PatientSignUp() {
               placeholder="patient@example.com"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
           </div>
 
           <div>
@@ -194,6 +211,7 @@ export default function PatientSignUp() {
               placeholder="+1234567890"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.phone && <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>}
           </div>
 
           <div>
@@ -219,6 +237,7 @@ export default function PatientSignUp() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
             <p className="text-xs text-slate-500 mt-1">At least 6 characters</p>
+            {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
           </div>
 
           <div>
@@ -232,6 +251,7 @@ export default function PatientSignUp() {
               minLength={6}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.confirmPassword && <p className="mt-1 text-xs text-red-600">{fieldErrors.confirmPassword}</p>}
           </div>
 
           {error && (
@@ -245,7 +265,12 @@ export default function PatientSignUp() {
             disabled={loading}
             className="w-full rounded-lg border border-teal-600 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white font-semibold px-3 py-2 transition-colors"
           >
-            {loading ? "Creating Account..." : "Create Account"}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Creating Account...
+              </span>
+            ) : "Create Account"}
           </button>
 
           <div className="text-center text-sm text-slate-600">

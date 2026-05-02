@@ -4,6 +4,9 @@ import BookingForm from "../components/BookingForm";
 import { API_URLS } from "../utils/api";
 import FindWithAI from "../components/FindWithAI";
 import StarRating from "../components/StarRating";
+import EmptyState from "../components/EmptyState";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "../components/ToastProvider";
 
 type Worker = {
   _id: string;
@@ -34,6 +37,8 @@ type Review = {
 type RoleFilter = "all" | "Nurse" | "Caretaker" | "Compounder";
 
 export default function BrowseProviders() {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [filteredWorkers, setFilteredWorkers] = useState<Worker[]>([]);
   const [selectedRole, setSelectedRole] = useState<RoleFilter>("all");
@@ -145,8 +150,8 @@ export default function BrowseProviders() {
   function handleBookNow(worker: Worker) {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login to book a service");
-      // Optionally redirect to login
+      showToast("Please login to book a service", "error");
+      navigate("/login", { state: { from: { pathname: "/browse" } } });
       return;
     }
     setWorkerToBook(worker);
@@ -156,8 +161,6 @@ export default function BrowseProviders() {
   function handleBookingSuccess() {
     setShowBookingModal(false);
     setWorkerToBook(null);
-    alert("Booking created successfully! Check your bookings from the navbar.");
-    // Optionally navigate to bookings page
   }
 
   function handleAIRecommend(recommendedWorkers: Worker[], reasoning: string) {
@@ -312,31 +315,16 @@ export default function BrowseProviders() {
 
           {/* Workers Grid */}
           {filteredWorkers.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-              <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
-                <svg
-                  className="w-16 h-16 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                No providers found
-              </h3>
-              <p className="text-gray-600">
-                {selectedRole === "all"
-                  ? "There are no healthcare providers available at the moment."
-                  : `No ${selectedRole.toLowerCase()}s are available at the moment.`}
-              </p>
-            </div>
+            <EmptyState
+              title="No providers found"
+              message={
+                selectedRole === "all"
+                  ? "There are no healthcare providers available at the moment. Try again later or reset filters."
+                  : `No ${selectedRole.toLowerCase()}s are available right now. Reset filters to view all providers.`
+              }
+              actionLabel={selectedRole === "all" ? "Retry" : "Reset Filters"}
+              onAction={selectedRole === "all" ? fetchWorkers : handleResetFilters}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredWorkers.map((worker) => (
@@ -583,7 +571,8 @@ export default function BrowseProviders() {
                   onClick={() => {
                     const token = localStorage.getItem("token");
                     if (!token) {
-                      alert("Please login to book a service");
+                      showToast("Please login to book a service", "error");
+                      navigate("/login", { state: { from: { pathname: "/browse" } } });
                       return;
                     }
                     setShowDetailsModal(false);

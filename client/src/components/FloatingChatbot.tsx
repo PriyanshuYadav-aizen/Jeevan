@@ -13,7 +13,7 @@ export default function FloatingChatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your friendly medical assistant chatbot. Ask me anything about health and medicine - I can understand your questions in any format, even with typos! Just ask naturally and I'll do my best to help. Remember, I provide general information and am not a substitute for professional medical advice.",
+      content: "Hi! I'm your AI assistant. How can I help you today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -72,11 +72,11 @@ export default function FloatingChatbot() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Something went wrong";
+      const errorMessage = "Sorry, I couldn't connect. Please try again.";
       setError(errorMessage);
       const errorMsg: Message = {
         role: "assistant",
-        content: `Sorry, I encountered an error: ${errorMessage}`,
+        content: errorMessage,
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
@@ -86,11 +86,11 @@ export default function FloatingChatbot() {
 
   return (
     <>
-      {/* Floating Button - Left Side (hidden when fullscreen) */}
+      {/* Floating Button */}
       {!isFullscreen && (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`fixed left-4 bottom-4 sm:left-6 sm:bottom-6 z-[60] bg-teal-500 hover:bg-teal-600 text-white rounded-full p-3 sm:p-4 shadow-lg transition-all duration-300 hover:scale-110 ${
+          className={`fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-[60] bg-teal-500 hover:bg-teal-600 text-white rounded-full p-3 sm:p-4 shadow-lg transition-all duration-300 hover:scale-110 ${
             isOpen ? "rotate-180" : ""
           }`}
           aria-label="Open Medical Chatbot"
@@ -116,16 +116,16 @@ export default function FloatingChatbot() {
         </button>
       )}
 
-      {/* Chat Window - Slides from Left */}
+      {/* Chat Window */}
       {(isOpen || isFullscreen) && (
       <div
         className={`fixed z-[60] bg-white shadow-2xl border border-slate-200 transition-all duration-300 ease-in-out ${
           isFullscreen
             ? "inset-0 rounded-none opacity-100"
-            : `left-2 right-2 sm:left-4 sm:right-auto sm:bottom-24 bottom-20 w-auto sm:w-96 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-3rem)] rounded-xl ${
+            : `left-2 right-2 sm:left-auto sm:right-4 sm:bottom-24 bottom-20 w-auto sm:w-96 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-3rem)] rounded-xl ${
                 isOpen
                   ? "opacity-100 translate-x-0"
-                  : "opacity-0 translate-x-[-120%] pointer-events-none"
+                  : "opacity-0 translate-x-[120%] pointer-events-none"
               }`
         }`}
         style={isFullscreen ? { height: "100vh" } : { maxHeight: "calc(100vh - 120px)", height: "auto" }}
@@ -134,7 +134,7 @@ export default function FloatingChatbot() {
         <div className={`bg-teal-500 text-white p-3 sm:p-4 flex items-center justify-between ${isFullscreen ? "" : "rounded-t-xl"}`}>
           <div className="min-w-0 flex-1">
             <h3 className="text-base sm:text-lg font-bold truncate">Medical Assistant</h3>
-            <p className="text-xs text-teal-50 truncate">Ask medical questions</p>
+            <p className="text-xs text-teal-50 truncate">Ask questions anytime</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {/* Fullscreen Toggle Button */}
@@ -247,7 +247,7 @@ export default function FloatingChatbot() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask any medical question..."
+              placeholder="Ask me anything..."
               className="flex-1 text-xs sm:text-sm rounded-lg border border-slate-300 px-2 sm:px-3 py-1.5 sm:py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
               disabled={loading}
             />
@@ -259,9 +259,6 @@ export default function FloatingChatbot() {
               {loading ? "..." : "Send"}
             </button>
           </div>
-          <p className="text-xs text-slate-500 mt-1 hidden sm:block">
-            Ask naturally - I understand any format, even with typos!
-          </p>
         </form>
       </div>
       )}

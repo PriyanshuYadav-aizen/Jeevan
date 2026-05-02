@@ -118,7 +118,7 @@ export default function BookingStatus() {
   useEffect(() => {
     if (!token) {
       // Redirect to login if not authenticated
-      navigate("/admin/login");
+      navigate("/login");
       return;
     }
     fetchBookings();

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
+import { useToast } from "../components/ToastProvider";
 
 type SignUpResponse = {
   id?: string;
@@ -13,6 +14,7 @@ type SignUpResponse = {
 
 export default function AdminSignUp() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -24,31 +26,37 @@ export default function AdminSignUp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    const nextErrors: Record<string, string> = {};
 
     // Validation
     if (!formData.username || !formData.email || !formData.password || !formData.phone) {
-      setError("Please fill in all required fields");
-      return;
+      if (!formData.username) nextErrors.username = "Username is required";
+      if (!formData.email) nextErrors.email = "Email is required";
+      if (!formData.password) nextErrors.password = "Password is required";
+      if (!formData.phone) nextErrors.phone = "Phone is required";
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
+      nextErrors.password = "Password must be at least 6 characters long";
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
+      nextErrors.confirmPassword = "Passwords do not match";
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
+      nextErrors.email = "Please enter a valid email address";
+    }
+
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
@@ -74,12 +82,14 @@ export default function AdminSignUp() {
       }
 
       setSuccess("Admin account created successfully! You can now log in.");
+      showToast("Admin account created successfully", "success");
       setTimeout(() => {
         navigate("/admin/login");
       }, 2000);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -106,6 +116,7 @@ export default function AdminSignUp() {
               placeholder="Enter username"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.username && <p className="mt-1 text-xs text-red-600">{fieldErrors.username}</p>}
           </div>
 
           <div>
@@ -120,6 +131,7 @@ export default function AdminSignUp() {
               placeholder="admin@example.com"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
           </div>
 
           <div>
@@ -134,6 +146,7 @@ export default function AdminSignUp() {
               placeholder="+91 1234567890"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.phone && <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p>}
           </div>
 
           <div>
@@ -162,6 +175,7 @@ export default function AdminSignUp() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
             <p className="text-xs text-slate-500 mt-1">Must be at least 6 characters</p>
+            {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
           </div>
 
           <div>
@@ -176,6 +190,7 @@ export default function AdminSignUp() {
               placeholder="••••••••"
               className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
             />
+            {fieldErrors.confirmPassword && <p className="mt-1 text-xs text-red-600">{fieldErrors.confirmPassword}</p>}
           </div>
         </div>
 
@@ -195,7 +210,12 @@ export default function AdminSignUp() {
           disabled={loading}
           className="mt-6 w-full rounded-lg border border-teal-600 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white font-semibold px-3 py-3 transition-colors"
         >
-          {loading ? "Creating Account..." : "Create Admin Account"}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Creating Account...
+            </span>
+          ) : "Create Admin Account"}
         </button>
 
         <div className="mt-4 text-center text-sm text-slate-600">

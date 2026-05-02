@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 type NavItem = {
   label: string;
@@ -15,30 +15,27 @@ const navItems: NavItem[] = [
 ];
 
 export default function AdminSidebar() {
-  const location = useLocation();
-
   return (
-    <aside className="w-64 min-h-screen bg-white border-r border-gray-200 shadow-sm fixed left-0 top-0 pt-16">
+    <aside className="w-full border-b border-gray-200 bg-white shadow-sm lg:fixed lg:left-0 lg:top-0 lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r lg:pt-16">
       <div className="p-4">
-        <div className="mb-8 px-3">
+        <div className="mb-4 px-3 lg:mb-8">
           <h2 className="text-xl font-extrabold text-gray-900">Admin Panel</h2>
           <p className="text-sm text-gray-500 mt-1">Jeevan 108</p>
         </div>
-        <nav className="space-y-1">
+        <nav className="flex gap-2 overflow-x-auto lg:block lg:space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
             return (
-              <Link
+              <NavLink
                 key={item.path}
                 to={item.path}
-                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+                className={({ isActive }) => `flex shrink-0 items-center px-4 py-3 rounded-lg transition-colors ${
                   isActive
                     ? "bg-teal-50 text-teal-700 font-semibold border-l-4 border-teal-500"
                     : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
                 <span className="text-sm">{item.label}</span>
-              </Link>
+              </NavLink>
             );
           })}
         </nav>
