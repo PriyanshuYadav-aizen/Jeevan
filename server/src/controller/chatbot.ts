@@ -9,6 +9,31 @@ function validateQuestion(question: string): { valid: boolean; message?: string 
   return { valid: true };
 }
 
+function getGeminiApiKey(): string | undefined {
+  return process.env.GEMINI_API_KEY || process.env.BLACKBOX_API_KEY;
+}
+
+function isGeminiUnavailableError(error: any): boolean {
+  const status = error?.error?.status || error?.status;
+  const reason = error?.error?.details?.find((detail: any) => detail?.reason)?.reason;
+  const message = String(error?.error?.message || error?.message || "").toLowerCase();
+
+  return (
+    status === "PERMISSION_DENIED" ||
+    reason === "CONSUMER_SUSPENDED" ||
+    (message.includes("consumer") && message.includes("suspended"))
+  );
+}
+
+function buildUnavailableFallback(message: string, details?: string) {
+  return {
+    response: generateFallbackMedicalResponse(message),
+    timestamp: new Date().toISOString(),
+    fallback: true,
+    details: process.env.NODE_ENV === "development" ? details : undefined,
+  };
+}
+
 function generateFallbackMedicalResponse(message: string): string {
   const normalizedMessage = message.toLowerCase().trim();
 
@@ -29,7 +54,7 @@ function generateFallbackMedicalResponse(message: string): string {
     return "For cough or cold symptoms, rest, fluids, and monitoring are a good start. If you have shortness of breath, chest pain, wheezing, or symptoms that are getting worse, please get medical care promptly.";
   }
 
-  return "I am having trouble reaching the medical AI right now. Please share your symptoms, and I can still give general health guidance.";
+  return "I can’t reach the medical AI right now. Please share your symptoms, and I can still give general health guidance. If you have chest pain, trouble breathing, confusion, severe dehydration, or symptoms that are getting worse quickly, please seek urgent medical care.";
 }
 
 export async function chatWithAI(req: Request, res: Response) {
@@ -47,14 +72,10 @@ export async function chatWithAI(req: Request, res: Response) {
     }
 
     // Check if API key is configured
-    const apiKey = process.env.BLACKBOX_API_KEY; // Keep using BLACKBOX_API_KEY env var name
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
-      console.error("BLACKBOX_API_KEY (Gemini API Key) is not configured in environment variables");
-      return res.json({
-        response: generateFallbackMedicalResponse(message),
-        timestamp: new Date().toISOString(),
-        fallback: true,
-      });
+      console.error("GEMINI_API_KEY is not configured in environment variables");
+      return res.json(buildUnavailableFallback(message, "Gemini API key is not configured"));
     }
 
     console.log("Calling Google Gemini API with message:", message.substring(0, 50) + "...");
@@ -119,6 +140,11 @@ Please provide a complete, detailed, and helpful response:`
           .filter((m: any) => m.supportedGenerationMethods?.includes("generateContent"))
           .map((m: any) => m.name?.replace("models/", ""));
         console.log("Available models:", availableModels);
+      } else if (isGeminiUnavailableError(listData)) {
+        console.error("Gemini API is unavailable:", JSON.stringify(listData, null, 2));
+        return res.json(
+          buildUnavailableFallback(message, listData?.error?.message || "Gemini API is currently unavailable")
+        );
       }
     } catch (listError) {
       console.log("Could not list models, will try default models");
@@ -153,6 +179,11 @@ Please provide a complete, detailed, and helpful response:`
           if (!response.ok) {
             console.error(`Gemini API Error for ${version}/${model}:`, JSON.stringify(data, null, 2));
             lastError = data;
+            if (isGeminiUnavailableError(data)) {
+              return res.json(
+                buildUnavailableFallback(message, data?.error?.message || "Gemini API is currently unavailable")
+              );
+            }
             // Continue to next model
             continue;
           }
@@ -176,14 +207,12 @@ Please provide a complete, detailed, and helpful response:`
     // If all models failed
     if (!data || !data.candidates) {
       console.error("All Gemini models failed. Last error:", lastError);
-      return res.json({
-        response: generateFallbackMedicalResponse(message),
-        timestamp: new Date().toISOString(),
-        fallback: true,
-        details: process.env.NODE_ENV === "development"
-          ? lastError?.error?.message || lastError?.message || "All model attempts failed"
-          : undefined,
-      });
+      return res.json(
+        buildUnavailableFallback(
+          message,
+          lastError?.error?.message || lastError?.message || "All model attempts failed"
+        )
+      );
     }
 
     // Extract response from Gemini API format
@@ -191,12 +220,7 @@ Please provide a complete, detailed, and helpful response:`
     
     if (!candidate) {
       console.error("No candidate in Gemini API response:", JSON.stringify(data, null, 2));
-      return res.json({
-        response: generateFallbackMedicalResponse(message),
-        timestamp: new Date().toISOString(),
-        fallback: true,
-        details: process.env.NODE_ENV === "development" ? "No candidate in API response" : undefined,
-      });
+      return res.json(buildUnavailableFallback(message, "No candidate in API response"));
     }
 
     // Check if response was blocked or filtered
@@ -216,12 +240,7 @@ Please provide a complete, detailed, and helpful response:`
 
     if (!aiResponse) {
       console.error("No text in Gemini API response:", JSON.stringify(data, null, 2));
-      return res.json({
-        response: generateFallbackMedicalResponse(message),
-        timestamp: new Date().toISOString(),
-        fallback: true,
-        details: process.env.NODE_ENV === "development" ? "No text in API response" : undefined,
-      });
+      return res.json(buildUnavailableFallback(message, "No text in API response"));
     }
 
     return res.json({
@@ -242,8 +261,9 @@ Please provide a complete, detailed, and helpful response:`
         ? {
             message: error.message,
             stack: error.stack,
-            apiKeyPresent: !!process.env.BLACKBOX_API_KEY,
-            apiKeyLength: process.env.BLACKBOX_API_KEY?.length || 0,
+            apiKeyPresent: !!getGeminiApiKey(),
+            apiKeyLength: getGeminiApiKey()?.length || 0,
+            unavailable: isGeminiUnavailableError(error),
           }
         : undefined,
     });
@@ -390,10 +410,10 @@ export async function recommendWorkers(req: Request, res: Response) {
     }
 
     // Check if API key is configured
-    const apiKey = process.env.BLACKBOX_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
-      console.error("BLACKBOX_API_KEY (Gemini API Key) is not configured");
-      return res.status(500).json({ error: "AI service is not configured" });
+      console.error("Gemini API key is not configured");
+      return getFallbackRecommendations(preferences, workers, res);
     }
     console.log("API Key found, length:", apiKey.length);
 
@@ -554,6 +574,10 @@ Return ONLY the JSON object, nothing else.`;
           if (!response.ok) {
             console.error(`Gemini API Error for ${version}/${model}:`, JSON.stringify(data, null, 2));
             lastError = data;
+            if (isGeminiUnavailableError(data)) {
+              console.log("Gemini is unavailable, using fallback recommendation logic immediately...");
+              return getFallbackRecommendations(preferences, workers, res);
+            }
             continue;
           }
 
@@ -648,6 +672,10 @@ Return ONLY the JSON object, nothing else.`;
     console.error("AI recommendation error:", error);
     console.error("Error stack:", error.stack);
     console.log("Using fallback recommendation due to error...");
+
+    if (isGeminiUnavailableError(error)) {
+      console.log("Detected Gemini suspension/unavailable error, returning fallback recommendations.");
+    }
     
     // Try to use fallback with preferences and workers from request
     try {
